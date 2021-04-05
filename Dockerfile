@@ -55,6 +55,8 @@ RUN conda update --name base --channel defaults conda && \
 RUN wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred -P $APPS_HOME/$APPNAME/utilities/ && \
     chmod +x $APPS_HOME/$APPNAME/utilities/gtfToGenePred
 
+
+
 # Install C-DNA cupcake dependency
 # Checkout most recent version at time of building docker image (6cefd47 = v19.0.0 on Jan 18, 2021)
 
@@ -68,7 +70,15 @@ RUN source $CONDA_DIR/etc/profile.d/conda.sh && \
   python setup.py build && \
   python setup.py install && \
   conda deactivate
+
+# install gtfparse
+RUN source $CONDA_DIR/etc/profile.d/conda.sh && \
+    conda activate /env/$APPNAME && \
+    conda install -c bioconda gtfparse && \
+    conda deactivate
+
 SHELL ["/bin/sh", "-c"]
+
 
 ### Make shell scripts to run conda apps in conda environment ###
 # e.g., SQANTI3 scripts can be run with `sqanti3_qc.py --help`
