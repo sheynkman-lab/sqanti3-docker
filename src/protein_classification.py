@@ -63,7 +63,7 @@ def classify_protein_splice_ism(row):
             return 'pNIC,alt_nterm_known_splice_known_cterm,,'
         elif row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang>0:
             return 'pNNC,novel_nterm_known_splice_known_cterm,,'
-             elif row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
+        elif row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
             return 'pISM,cand_ntrunc,,'
         elif row.pr_nterm_gene_diff == 0 and row.pr_chang > 0 and row.pr_cterm_gene_diff == 0:
             return 'pNIC,combo_nterm_cterm'
