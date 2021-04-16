@@ -17,7 +17,7 @@ def classify_protein_splice_fsm(row):
             return 'pNIC,alt_nterm,,assume nterm novel'
         elif (row.tx_cat=='full-splice_match' or row.tx_cat=='incomplete-splice_match') and row.tx_5hang>0 and row.pr_nhang<0 and row.pr_chang==0:
             return 'pNIC,alt_nterm,,assume nterm novel'
-        elif row.pr_nterm_diff==0 and row.pr_cterm_diff!=0:
+        elif row.pr_nterm_diff==0 and row.pr_cterm_diff!=0 and row.pr_chang<0:
             return 'pISM,cand_ctrunc,,'
         elif row.tx_cat=='full-splice_match' and row.pr_cterm_diff==0 and row.tx_5hang<0 and row.pr_nhang<0:
             return 'pISM,cand_ntrunc,,'
@@ -45,13 +45,13 @@ def classify_protein_splice_ism(row):
             return 'pNIC,known_nterm_known_splice_alt_cterm,is_nmd?,'
         elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_diff!=0 and row.tx_5hang<0 and row.pr_nhang<0:
             return 'pISM,cand_ntrunc,,'
-        elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.tx_5hang<=10 and row.pr_nhang<0:
+        elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.tx_5hang>=10 and row.pr_nhang<0:
             return 'pNNC,novel_nterm_known_splice_known_cterm,,'
-        elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff==0 and row.tx_5hang<=10 and row.pr_nhang<0:
+        elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff==0 and row.tx_5hang>=10 and row.pr_nhang<0:
             return 'pNIC,combo_nterm_cterm,,'
-        elif row.tx_cat=='full-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
+        elif row.tx_cat=='full-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
             return 'pNNC,novel_nterm_known_splice_known_cterm,,'
-        elif row.tx_cat=='full-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 row.pr_nterm_gene_diff0=0 and row.pr_nhang<0:
+        elif row.tx_cat=='full-splice_match' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff==0 and row.pr_nhang<0:
             return 'pNIC,combo_nterm_cterm,,'
         elif row.tx_cat=='novel_in_catalog' and row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
             return 'pNNC,novel_nterm_known_splice_known_cterm,,'
@@ -63,12 +63,38 @@ def classify_protein_splice_ism(row):
             return 'pNIC,alt_nterm_known_splice_known_cterm,,'
         elif row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang>0:
             return 'pNNC,novel_nterm_known_splice_known_cterm,,'
+             elif row.pr_nterm_diff!=0 and row.pr_cterm_diff==0 and row.pr_nterm_gene_diff!=0 and row.pr_nhang<0:
+            return 'pISM,cand_ntrunc,,'
+        elif row.pr_nterm_gene_diff == 0 and row.pr_chang > 0 and row.pr_cterm_gene_diff == 0:
+            return 'pNIC,combo_nterm_cterm'
+            
+        elif row.pr_nterm_gene_diff == 0 and row.pr_cterm_gene_diff != 0: 
+            return 'pNNC,known_nterm_known_splice_novel_cterm' # orphan ism with known N-term 
+            
+        # elif row.pr_nterm_gene_diff == 0 and row.pr_chang > 0 and row.pr_cterm_gene_diff != 0:
+            # return 'pNNC,known_nterm_known_splice_novel_cterm' # known N-term and known splice, was unicorn
+        # elif row.pr_nterm_gene_diff == 0 and row.pr_chang < 0 and row.pr_cterm_gene_diff != 0:
+        #     return 'pNNC,known_nterm_known_splice_novel_cterm' # subset C-term with known N
+        elif row.tx_cat=='novel_in_catalog' and row.pr_nterm_gene_diff==0 and row.pr_cterm_gene_diff==0:
+            return 'pNIC,combo_nterm_cterm_splice' # takes care of orphan_ism where known N-C term with known splice-example PB.1120.27
+        elif row.tx_cat=='incomplete-splice_match' and row.pr_nterm_gene_diff!=0 and row.tx_5hang > 10:
+            if row.pr_cterm_gene_diff==0: # PB.872.17, taking care of 5' ISM where 5' end of transcript is protruding
+                return 'pNNC,novel_nterm_known_splice_known_cterm'
+            else:
+                return 'pNNC,novel_nterm_known_splice_novel_cterm'
         elif row.pr_nterm_diff!=0 and row.pr_cterm_diff!=0:
             return 'unicorn?,,,'
         else:
             return 'orphan_ism'
     return ''
-    
+
+
+
+
+
+
+
+
 def classify_protein_splice_nic(row):
     if row.pr_splice_cat=='novel_in_catalog' and 'mono-exon' not in row.pr_splice_subcat:
         if row.pr_nterm_gene_diff==0 and row.pr_cterm_gene_diff==0:
