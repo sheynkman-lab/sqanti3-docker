@@ -6,6 +6,7 @@ import csv
 import re
 import argparse
 import gtfparse
+import multiprocessing
 
 #%%
 REQUIRED_COLUMNS = [
@@ -44,7 +45,6 @@ def transform_cds(gtf):
     gtf_cds = (
         gtf
             .query('feature in ["transcript","CDS"]')
-            .copy()  
     )
     # rename CDS to exon and update transcript range
     gtf_cds['feature'] = np.where(gtf_cds['feature'] =='CDS','exon','transcript')
@@ -75,17 +75,41 @@ def process_gtf(sample, name):
     )
     sample_exon.to_csv(f'{name}.transcript_exons_only.gtf', sep='\t',index=False, header=False, quoting=csv.QUOTE_NONE)
 
+def process_gtf_single(sample):
+    transformed = transform_cds(sample)
+    transformed['attribute'] = transformed.apply(make_attribute_column, axis=1)
+    transformed = transformed.filter(REQUIRED_COLUMNS + ['attribute'])
+    return transformed
+    
+    
+def process_gtf_multiprocess(sample,name, num_cores):
+    # transform cds info
+    chromosomes = sample['seqname'].unique()
+    sample_split = [sample_split[sample_split['seqname'] == csome] for csome in seqname]
+    pool = multiprocessing.Pool(processes = num_cores)
+    sample_cds_split = pool.map(process_gtf_single, sample_split)
+    sample_cds = pd.concat(sample_cds_split)
+    sample_cds.to_csv(f'{name}.cds_renamed_exon.gtf', sep='\t',index=False, header=False, quoting=csv.QUOTE_NONE)
+    #make attribute column for exon df
+    sample['attribute'] = sample.apply(make_attribute_column, axis=1)
+    sample = sample.filter(REQUIRED_COLUMNS + ['attribute'])
+    sample_exon = (
+        sample
+            .query('feature in ["transcript","exon"]')
+    )
+    sample_exon.to_csv(f'{name}.transcript_exons_only.gtf', sep='\t',index=False, header=False, quoting=csv.QUOTE_NONE)
+    
 
 def process_sample_rename(sample_file, name):
 
     sample = gtfparse.read_gtf(sample_file)
     sample['transcript_id'] = sample['transcript_id'].apply(lambda x: x.split('|')[1])
-    process_gtf(sample, name)
+    process_gtf_multiprocess(sample, name)
 
 def process_reference_rename(reference_file, name):
     
     ref = gtfparse.read_gtf(reference_file)
-    process_gtf(ref, name)
+    process_gtf_multiprocess(ref, name)
 
     
 
@@ -119,6 +143,7 @@ def main():
     parser.add_argument('--sample_name', action='store', dest= 'sample_name',help='sample name')
     parser.add_argument('--reference_gtf', action='store', dest= 'reference_gtf',help='sample gtf file')
     parser.add_argument('--reference_name', action='store', dest= 'reference_name',help='sample name')
+    parser.add_argument('--num_cores', action='store',dest='num_cores',help='number of cores to use in multiprocessing',default=8)
     results = parser.parse_args()
     
     process_sample_rename(results.sample_gtf, results.sample_name)
