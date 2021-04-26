@@ -85,7 +85,7 @@ def process_gtf_single(sample):
 def process_gtf_multiprocess(sample,name, num_cores):
     # transform cds info
     chromosomes = sample['seqname'].unique()
-    sample_split = [sample_split[sample_split['seqname'] == csome] for csome in seqname]
+    sample_split = [sample[sample['seqname'] == csome] for csome in chromosomes]
     pool = multiprocessing.Pool(processes = num_cores)
     sample_cds_split = pool.map(process_gtf_single, sample_split)
     sample_cds = pd.concat(sample_cds_split)
@@ -100,16 +100,16 @@ def process_gtf_multiprocess(sample,name, num_cores):
     sample_exon.to_csv(f'{name}.transcript_exons_only.gtf', sep='\t',index=False, header=False, quoting=csv.QUOTE_NONE)
     
 
-def process_sample_rename(sample_file, name):
+def process_sample_rename(sample_file, name, num_cores):
 
     sample = gtfparse.read_gtf(sample_file)
     sample['transcript_id'] = sample['transcript_id'].apply(lambda x: x.split('|')[1])
-    process_gtf_multiprocess(sample, name)
+    process_gtf_multiprocess(sample, name, num_cores)
 
-def process_reference_rename(reference_file, name):
+def process_reference_rename(reference_file, name, num_cores):
     
     ref = gtfparse.read_gtf(reference_file)
-    process_gtf_multiprocess(ref, name)
+    process_gtf_multiprocess(ref, name, num_cores)
 
     
 
@@ -143,11 +143,11 @@ def main():
     parser.add_argument('--sample_name', action='store', dest= 'sample_name',help='sample name')
     parser.add_argument('--reference_gtf', action='store', dest= 'reference_gtf',help='sample gtf file')
     parser.add_argument('--reference_name', action='store', dest= 'reference_name',help='sample name')
-    parser.add_argument('--num_cores', action='store',dest='num_cores',help='number of cores to use in multiprocessing',default=8)
+    parser.add_argument('--num_cores', action='store',dest='num_cores',help='number of cores to use in multiprocessing',default=8,type=int)
     results = parser.parse_args()
     
-    process_sample_rename(results.sample_gtf, results.sample_name)
-    process_reference_rename(results.reference_gtf, results.reference_name)
+    process_sample_rename(results.sample_gtf, results.sample_name, results.num_cores)
+    process_reference_rename(results.reference_gtf, results.reference_name, results.num_cores)
 
 #%%
     
